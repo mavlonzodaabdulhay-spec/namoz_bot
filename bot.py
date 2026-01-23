@@ -6,10 +6,10 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from flask import Flask
 from threading import Thread
 
-# 1. Web server (Render o'chmasligi uchun)
+# 1. Render o'chib qolmasligi uchun kichik server
 app = Flask('')
 @app.route('/')
-def home(): return "Bot tirik!"
+def home(): return "Bot ishlayapti!"
 def run(): app.run(host='0.0.0.0', port=8080)
 def keep_alive(): Thread(target=run).start()
 
@@ -18,47 +18,46 @@ TOKEN = "8461895608:AAHrTyxLsnlyUnXLhoPltb3XOuwQXRGBBIE"
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-# Start buyrug'i berilganda joylashuv so'rash
+# Pastki menyu tugmalari
+def main_menu():
+    kb = [
+        [KeyboardButton(text="📍 Joylashuvni yuborish", request_location=True)],
+        [KeyboardButton(text="ℹ️ Ma'lumot"), KeyboardButton(text="⚙️ Sozlamalar")]
+    ]
+    return ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
+
 @dp.message(Command("start"))
 async def start_cmd(message: types.Message):
-    # Joylashuv yuborish tugmasi
-    btn = [[KeyboardButton(text="📍 Joylashuvni yuborish", request_location=True)]]
-    keyboard = ReplyKeyboardMarkup(keyboard=btn, resize_keyboard=True, one_time_keyboard=True)
-    
     await message.answer(
-        "Assalomu alaykum! Namoz vaqtlarini aniqlash uchun quyidagi tugmani bosing va joylashuvingizni yuboring. "
-        "Bu dunyoning istalgan nuqtasida (O'zbekiston, Angliya, Afrika...) aniq vaqtni ko'rsatadi.",
-        reply_markup=keyboard
+        "Assalomu alaykum! Namoz vaqtlarini aniqlash uchun joylashuvingizni yuboring:",
+        reply_markup=main_menu()
     )
 
-# Joylashuv kelganda vaqtni hisoblash
-@dp.message(lambda message: message.location is not None)
+@dp.message(lambda m: m.location is not None)
 async def handle_location(message: types.Message):
     lat = message.location.latitude
     lon = message.location.longitude
-    
-    # Aladhan API koordinata orqali (Method 3 - O'zbekistonga ham mos)
     url = f"http://api.aladhan.com/v1/timings?latitude={lat}&longitude={lon}&method=3"
     
     try:
         res = requests.get(url).json()
         t = res['data']['timings']
-        data = res['data']
+        d = res['data']['date']
         
         text = (
-            f"📍 Hudud: {data['meta']['timezone']}\n"
-            f"📅 Sana: {data['date']['readable']}\n\n"
-            f"💥 Bomdod: {t['Fajr']}\n"
-            f"☀️ Quyosh: {t['Sunrise']}\n"
-            f"☀️ Peshin: {t['Dhuhr']}\n"
-            f"🌇 Asr: {t['Asr']}\n"
-            f"🌆 Shom: {t['Maghrib']}\n"
-            f"🌃 Xufton: {t['Isha']}\n\n"
-            f"⚠️ Vaqtlar siz turgan nuqtaga nisbatan aniq hisoblandi."
+            f"🌍 **Hudud:** {res['data']['meta']['timezone']}\n"
+            f"📅 **Sana:** {d['readable']} ({d['hijri']['day']} {d['hijri']['month']['en']})\n\n"
+            f"🏙 **Bomdod:** {t['Fajr']}\n"
+            f"☀️ **Quyosh:** {t['Sunrise']}\n"
+            f"☀️ **Peshin:** {t['Dhuhr']}\n"
+            f"🌇 **Asr:** {t['Asr']}\n"
+            f"🌆 **Shom:** {t['Maghrib']}\n"
+            f"🌃 **Xufton:** {t['Isha']}\n\n"
+            f"✨ Ramazonga taxminan 25 kun qoldi."
         )
-        await message.answer(text)
+        await message.answer(text, parse_mode="Markdown")
     except:
-        await message.answer("Vaqtlarni olishda xatolik yuz berdi. Iltimos, qaytadan urinib ko'ring.")
+        await message.answer("Xatolik yuz berdi. Qayta urinib ko'ring.")
 
 async def main():
     keep_alive()
