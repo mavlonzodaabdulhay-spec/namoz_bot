@@ -6,18 +6,19 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from flask import Flask
 from threading import Thread
 
-# 1. Render uchun Web Server
+# 1. Render serverini uxlab qolmasligi uchun sozlash
 app = Flask('')
 @app.route('/')
-def home(): return "Bot faol!"
+def home(): return "Bot 24/7 ishlamoqda!"
 def run(): app.run(host='0.0.0.0', port=8080)
 def keep_alive(): Thread(target=run).start()
 
-# 2. Sozlamalar
-TOKEN = "8461895608:AAHz0FEOLZYz0noIeNSlA6rIvsmLqq_Vceo"
+# 2. Yangi TOKEN sozlamalari (@Namozvoqti_bot)
+TOKEN = "8456499271:AAEuc6zQc76bz0sXwvG2mHOiSZwzTMR1o9I"
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
+# Professional Menyu tugmalari
 def main_menu():
     kb = [
         [KeyboardButton(text="📍 Joylashuvni yuborish", request_location=True)],
@@ -28,45 +29,63 @@ def main_menu():
 
 @dp.message(Command("start"))
 async def start_cmd(message: types.Message):
-    await message.answer("Xush kelibsiz! Kerakli bo'limni tanlang:", reply_markup=main_menu())
+    await message.answer(
+        "Assalomu alaykum! @Namozvoqti_bot ga xush kelibsiz.\n"
+        "Namoz vaqtlarini aniqlash uchun quyidagi tugmalardan foydalaning:",
+        reply_markup=main_menu()
+    )
 
-# BUGUN tugmasi uchun
+# 📅 BUGUN tugmasi
 @dp.message(F.text == "📅 Bugun")
 async def today_info(message: types.Message):
-    await message.answer("Iltimos, bugungi vaqtlarni yangilash uchun 📍 Joylashuvni yuborish tugmasini bosing.")
+    await message.answer("Bugungi namoz vaqtlarini yangilash uchun 📍 Joylashuvni yuborish tugmasini bosing.")
 
-# ERTAGA tugmasi uchun
+# 🌅 ERTAGA tugmasi
 @dp.message(F.text == "🌅 Ertaga")
 async def tomorrow_info(message: types.Message):
-    await message.answer("Ertangi namoz vaqtlari bo'limi hozirda sozlanmoqda.")
+    await message.answer("Ertangi namoz vaqtlari tizimi sozlanmoqda. Hozircha faqat bugungi vaqtlarni ko'rishingiz mumkin.")
 
-# QIBLA tugmasi uchun
+# 🕋 QIBLA tugmasi
 @dp.message(F.text == "🕋 Qibla yo'nalishi")
 async def qibla_info(message: types.Message):
-    await message.answer("🕋 Qibla yo'nalishi Toshkent shahri bo'yicha: Janubi-g'arb (251°).")
+    await message.answer("🕋 O'zbekiston bo'yicha Qibla yo'nalishi taxminan 251° (Janubi-g'arb) tomonda.")
 
-# SOZLAMALAR tugmasi uchun
+# ⚙️ SOZLAMALAR tugmasi
 @dp.message(F.text == "⚙️ Sozlamalar")
 async def settings_info(message: types.Message):
-    await message.answer("⚙️ Sozlamalar: Til - O'zbekcha. (Boshqa sozlamalar tez kunda).")
+    await message.answer("⚙️ Sozlamalar: Bot hozirda O'zbek tilida ishlamoqda.")
 
-# LOKATSIYA kelganda ishlaydigan asosiy qism
+# JOYLASHUVNI QABUL QILISH VA VAQTLARNI CHIQARISH
 @dp.message(F.location)
 async def handle_location(message: types.Message):
-    lat, lon = message.location.latitude, message.location.longitude
+    lat = message.location.latitude
+    lon = message.location.longitude
     url = f"http://api.aladhan.com/v1/timings?latitude={lat}&longitude={lon}&method=3"
-    res = requests.get(url).json()
-    t = res['data']['timings']
     
-    text = (
-        f"🏙 Bomdod: {t['Fajr']}\n☀️ Quyosh: {t['Sunrise']}\n"
-        f"☀️ Peshin: {t['Dhuhr']}\n🌇 Asr: {t['Asr']}\n"
-        f"🌆 Shom: {t['Maghrib']}\n🌃 Xufton: {t['Isha']}"
-    )
-    await message.answer(f"📍 Tanlangan hudud bo'yicha vaqtlar:\n\n{text}")
+    try:
+        res = requests.get(url).json()
+        t = res['data']['timings']
+        d = res['data']['date']
+        
+        text = (
+            f"🌍 **Hudud:** {res['data']['meta']['timezone']}\n"
+            f"📅 **Sana:** {d['readable']}\n"
+            f"🌙 **Hijriy:** {d['hijri']['day']} {d['hijri']['month']['en']}\n\n"
+            f"🏙 **Bomdod:** {t['Fajr']}\n"
+            f"☀️ **Quyosh:** {t['Sunrise']}\n"
+            f"☀️ **Peshin:** {t['Dhuhr']}\n"
+            f"🌇 **Asr:** {t['Asr']}\n"
+            f"🌆 **Shom:** {t['Maghrib']}\n"
+            f"🌃 **Xufton:** {t['Isha']}\n\n"
+            f"✨ Ramazon oyiga 25 kun qoldi inshaAllah."
+        )
+        await message.answer(text, parse_mode="Markdown")
+    except Exception:
+        await message.answer("⚠️ Ma'lumot olishda xatolik yuz berdi.")
 
 async def main():
     keep_alive()
+    # Eski xatoliklarni tozalash uchun
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
 
